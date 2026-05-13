@@ -20,6 +20,7 @@ const errorMessage = ref('')
 const isBusy = ref(false)
 const stageSvg = ref<SVGSVGElement | null>(null)
 const dragState = ref<{ faceId: string; dx: number; dy: number } | null>(null)
+const hasImportedFaceJson = ref(false)
 
 const selectedFace = computed(() => documentState.faces.find((face: FaceRegion) => face.faceId === selectedFaceId.value) ?? null)
 
@@ -64,6 +65,7 @@ async function onImageSelected(event: Event) {
   clearError()
   candidates.value = []
   selectedFaceId.value = null
+  hasImportedFaceJson.value = false
 
   try {
     isBusy.value = true
@@ -92,6 +94,7 @@ async function onJsonSelected(event: Event) {
     const parsed = JSON.parse(raw) as FaceDocument
     const response = await importSession(imageDataUrl.value, parsed)
     syncDocument(response.document)
+    hasImportedFaceJson.value = true
     candidates.value = []
     selectedFaceId.value = response.document.faces[0]?.faceId ?? null
   } catch (error) {
@@ -145,7 +148,13 @@ async function runDetection() {
   try {
     isBusy.value = true
     const response = await detectFaces(imageDataUrl.value, snapshotDocument())
-    candidates.value = response.candidates
+    if (hasImportedFaceJson.value) {
+      candidates.value = response.candidates
+      return
+    }
+
+    candidates.value = []
+    await acceptCandidates(response.candidates)
   } catch (error) {
     setError(error)
   } finally {
@@ -156,19 +165,31 @@ async function runDetection() {
 async function acceptCandidate(candidate: CandidateRegion) {
   clearError()
   try {
-    const face = await createFace(snapshotDocument(), {
-      cx: candidate.cx,
-      cy: candidate.cy,
-      rx: candidate.rx,
-      ry: candidate.ry,
-      profile: null,
-    })
-    documentState.faces.push(face)
+    const face = await createAcceptedFace(candidate)
     selectedFaceId.value = face.faceId
     candidates.value = candidates.value.filter((item: CandidateRegion) => item.candidateId !== candidate.candidateId)
   } catch (error) {
     setError(error)
   }
+}
+
+async function acceptCandidates(nextCandidates: CandidateRegion[]) {
+  for (const candidate of nextCandidates) {
+    const face = await createAcceptedFace(candidate)
+    selectedFaceId.value = face.faceId
+  }
+}
+
+async function createAcceptedFace(candidate: CandidateRegion) {
+  const face = await createFace(snapshotDocument(), {
+    cx: candidate.cx,
+    cy: candidate.cy,
+    rx: candidate.rx,
+    ry: candidate.ry,
+    profile: null,
+  })
+  documentState.faces.push(face)
+  return face
 }
 
 function ignoreCandidate(candidateId: string) {

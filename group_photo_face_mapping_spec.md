@@ -97,6 +97,10 @@ The detection is only used for initial suggestions.
 
 Manual editing is expected.
 
+When no `faces.json` or `faces.enriched.json` has been loaded, the first detection pass should auto-accept all detected faces into the editable face list.
+
+When existing JSON has been loaded, detection must follow the re-detection workflow below and show new regions as candidates.
+
 ---
 
 ## Face Region Shape
