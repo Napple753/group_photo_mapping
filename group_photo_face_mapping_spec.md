@@ -101,6 +101,10 @@ When no `faces.json` or `faces.enriched.json` has been loaded, the first detecti
 
 When existing JSON has been loaded, detection must follow the re-detection workflow below and show new regions as candidates.
 
+In the Tool A UI flow, users first load the image, then choose either direct detection or face JSON import from an overlay on top of the image.
+
+If face JSON is imported, detection must run automatically after the import completes.
+
 ---
 
 ## Face Region Shape
@@ -162,6 +166,8 @@ When existing JSON is loaded and face detection is run again:
 - Candidate regions are NOT auto-merged
 - Candidate regions are NOT auto-added
 - User manually accepts or ignores candidates
+
+The Tool A review UI may present accepted faces and candidates in one unified list, as long as candidate-specific actions remain explicit.
 
 This supports workflows like:
 
@@ -396,15 +402,23 @@ Recommended:
 
 # Privacy Notice
 
-The final HTML contains embedded personal information.
+Tool A does not need to show a persistent privacy warning during editing.
 
-Display a warning such as:
+Generated final HTML outputs may optionally include a privacy notice because they can contain embedded personal information.
+
+If enabled, display a warning such as:
 
 ```text
 Internal company use only.
 Contains personal information.
 Do not distribute externally.
 ```
+
+Requirements:
+
+- the privacy notice must be optional at final output generation time
+- the default behavior may omit the notice unless the user explicitly enables it
+- when enabled, the notice text must be part of the generated standalone HTML output
 
 ---
 
