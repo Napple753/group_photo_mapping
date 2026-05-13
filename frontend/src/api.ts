@@ -3,13 +3,18 @@ import type { CandidateRegion, ExportPayload, FaceDocument, FaceRegion, SessionI
 const API_BASE = 'http://127.0.0.1:8000/api'
 
 async function requestJson<T>(path: string, payload: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    throw new Error('Unable to reach the backend API. Confirm the FastAPI server is running and reload the page.')
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Request failed' }))

@@ -23,6 +23,22 @@ const dragState = ref<{ faceId: string; dx: number; dy: number } | null>(null)
 
 const selectedFace = computed(() => documentState.faces.find((face: FaceRegion) => face.faceId === selectedFaceId.value) ?? null)
 
+function snapshotDocument(): FaceDocument {
+  return {
+    schemaVersion: documentState.schemaVersion,
+    imageWidth: documentState.imageWidth,
+    imageHeight: documentState.imageHeight,
+    faces: documentState.faces.map((face: FaceRegion) => ({
+      faceId: face.faceId,
+      cx: face.cx,
+      cy: face.cy,
+      rx: face.rx,
+      ry: face.ry,
+      profile: face.profile ? { ...face.profile } : face.profile ?? null,
+    })),
+  }
+}
+
 function syncDocument(nextDocument: FaceDocument) {
   documentState.schemaVersion = nextDocument.schemaVersion
   documentState.imageWidth = nextDocument.imageWidth
@@ -52,7 +68,7 @@ async function onImageSelected(event: Event) {
   try {
     isBusy.value = true
     imageDataUrl.value = await readAsDataUrl(file)
-    const response = await importSession(imageDataUrl.value, documentState.faces.length ? structuredClone(documentState) : null)
+    const response = await importSession(imageDataUrl.value, documentState.faces.length ? snapshotDocument() : null)
     syncDocument(response.document)
   } catch (error) {
     setError(error)
@@ -93,7 +109,7 @@ async function addManualFace() {
 
   clearError()
   try {
-    const newFace = await createFace(structuredClone(documentState), {
+    const newFace = await createFace(snapshotDocument(), {
       cx: 0.5,
       cy: 0.5,
       rx: 0.05,
@@ -128,7 +144,7 @@ async function runDetection() {
   clearError()
   try {
     isBusy.value = true
-    const response = await detectFaces(imageDataUrl.value, structuredClone(documentState))
+    const response = await detectFaces(imageDataUrl.value, snapshotDocument())
     candidates.value = response.candidates
   } catch (error) {
     setError(error)
@@ -140,7 +156,7 @@ async function runDetection() {
 async function acceptCandidate(candidate: CandidateRegion) {
   clearError()
   try {
-    const face = await createFace(structuredClone(documentState), {
+    const face = await createFace(snapshotDocument(), {
       cx: candidate.cx,
       cy: candidate.cy,
       rx: candidate.rx,
@@ -167,7 +183,7 @@ async function downloadFacesJson() {
 
   clearError()
   try {
-    const payload = await exportFacesJson(imageDataUrl.value, structuredClone(documentState))
+    const payload = await exportFacesJson(imageDataUrl.value, snapshotDocument())
     downloadFile(payload.fileName, payload.content, payload.contentType)
   } catch (error) {
     setError(error)
@@ -182,7 +198,7 @@ async function downloadFormEntry() {
 
   clearError()
   try {
-    const payload = await exportFormEntry(imageDataUrl.value, structuredClone(documentState), msFormsUrlPrefix.value)
+    const payload = await exportFormEntry(imageDataUrl.value, snapshotDocument(), msFormsUrlPrefix.value)
     downloadFile(payload.fileName, payload.content, payload.contentType)
   } catch (error) {
     setError(error)

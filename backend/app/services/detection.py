@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Iterable
 
 import cv2
@@ -9,6 +10,9 @@ from app.models import CandidateRegion, FaceRegion
 from app.services.ids import generate_candidate_id
 
 
+DETECTOR_MODE = os.getenv("TOOL_A_DETECTOR", "opencv").strip().lower()
+
+
 def detect_face_candidates(image_bytes: bytes, existing_faces: Iterable[FaceRegion]) -> list[CandidateRegion]:
     image_array = np.frombuffer(image_bytes, dtype=np.uint8)
     image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
@@ -16,9 +20,7 @@ def detect_face_candidates(image_bytes: bytes, existing_faces: Iterable[FaceRegi
         raise ValueError("Unable to decode image for face detection")
 
     image_height, image_width = image.shape[:2]
-    detections = _detect_with_mediapipe(image)
-    if not detections:
-        detections = _detect_with_haar(image)
+    detections = _detect_faces(image)
 
     existing = list(existing_faces)
     candidates: list[CandidateRegion] = []
@@ -38,16 +40,36 @@ def detect_face_candidates(image_bytes: bytes, existing_faces: Iterable[FaceRegi
     return candidates
 
 
+def _detect_faces(image: np.ndarray) -> list[tuple[float, float, float, float, float | None]]:
+    if DETECTOR_MODE == "mediapipe":
+        detections = _detect_with_mediapipe(image)
+        if detections:
+            return detections
+        return _detect_with_haar(image)
+
+    if DETECTOR_MODE == "hybrid":
+        detections = _detect_with_haar(image)
+        if detections:
+            return detections
+        return _detect_with_mediapipe(image)
+
+    return _detect_with_haar(image)
+
+
 def _detect_with_mediapipe(image: np.ndarray) -> list[tuple[float, float, float, float, float | None]]:
     try:
         import mediapipe as mp
-    except ImportError:
+    except Exception:
         return []
 
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    detector = mp.solutions.face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.45)
-    results = detector.process(rgb_image)
-    detector.close()
+    try:
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        detector = mp.solutions.face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.45)
+        results = detector.process(rgb_image)
+        detector.close()
+    except Exception:
+        return []
+
     if not results.detections:
         return []
 
