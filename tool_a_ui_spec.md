@@ -166,7 +166,7 @@ After an image is loaded:
 #### Load Image Button
 
 - Type: file input trigger
-- Accepts: image files
+- Accepts: JPEG, PNG, and WebP image files
 - Purpose: load or replace the active group photo
 
 Behavior:
@@ -274,7 +274,9 @@ Behavior:
 - hidden when no image is loaded
 - shown immediately after each new image load
 - dismissed after either action successfully completes
+- a successful detection action includes a zero-result detection response
 - may be shown again if the image is replaced
+- detection failure after JSON import should surface through the Error Banner without reopening the overlay
 
 #### SVG Overlay Layer
 
@@ -412,6 +414,7 @@ Displays:
 
 - `Add Face` button remains available
 - `Delete Selected` button remains disabled
+- geometry sliders remain visible but disabled
 - Message: `Accept the candidate from the list before editing its ellipse.`
 
 ### Action Controls
@@ -422,7 +425,7 @@ Displays:
 - Behavior:
    - requires an image
    - creates a new face with a new `faceId`
-   - inserts a default ellipse at the center area
+   - inserts a default ellipse using `cx=0.5`, `cy=0.5`, `rx=0.03`, `ry=0.05`
    - selects the newly created face
 
 #### Delete Selected Button
@@ -518,15 +521,17 @@ Secondary label priority:
 Each candidate item must show:
 
 - `candidateId`
-- confidence text if available
+- confidence as an integer percentage if available
 - `Accept` button
 - `Ignore` button
 
 ### Candidate Item Behavior
 
-- clicking a candidate item may highlight the candidate on the stage
+- clicking a candidate item highlights the candidate on the stage
 - candidate items must be visually distinct from accepted faces
 - candidate items must not expose direct geometry editing controls
+
+`candidateId` only needs to be unique within the current detection result set and does not need to persist across later detections.
 
 ### Candidate Actions
 
@@ -575,8 +580,9 @@ Support output generation for Tool A deliverables.
 
 Validation rule:
 
-- required for `form_entry.html` export
+- expected for `form_entry.html` export
 - must end with `=`
+- invalid or missing values should trigger a warning message but must not block export
 
 Placeholder example:
 
@@ -590,7 +596,8 @@ Placeholder example:
 #### Export form_entry.html Button
 
 - Purpose: export standalone HTML for form entry workflow
-- Requires a valid MS Forms prefix
+- Uses the current MS Forms prefix value if provided
+- Warns when the prefix is missing or malformed, but does not block export
 
 ---
 
@@ -666,6 +673,8 @@ After the image is loaded, the stage overlay presents two actions:
 
 Choosing either action dismisses the overlay after successful completion.
 
+For JSON import with automatic re-detection, a zero-result detection response still counts as successful completion.
+
 ### JSON Import
 
 When face JSON is imported:
@@ -673,9 +682,12 @@ When face JSON is imported:
 - require an already loaded image
 - replace editor face data with imported data
 - preserve profile data if provided
+- expose `profile.fullName` in accepted-face list rows when available
+- do not expose profile fields for editing in Tool A
 - mark the session as imported-JSON mode
 - immediately run detection after the import completes
 - show newly detected regions as candidate items in the unified face list
+- keep the post-image action overlay closed even if the automatic detection request fails
 
 ### Initial Detection
 
@@ -709,6 +721,7 @@ Result:
 
 - a new accepted final face is created
 - creation is triggered from the Face Editor Panel
+- the default geometry is `cx=0.5`, `cy=0.5`, `rx=0.03`, `ry=0.05`
 - the face is immediately selectable and editable
 - the `Face Editor` tab may become active if another tab was open
 
@@ -763,6 +776,8 @@ Future inline validation may be added for:
 - invalid MS Forms prefix
 - export prerequisites
 - malformed imported JSON
+
+Warnings may be shown inline when they do not block the user action, such as a malformed MS Forms prefix before export.
 
 ---
 

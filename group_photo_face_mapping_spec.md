@@ -67,7 +67,7 @@ Create and edit face regions on a group photo and generate an MS Forms entry pag
 - `faces.json`
 - `faces.enriched.json`
 
-## Required when exporting `form_entry.html`
+## Expected when exporting `form_entry.html`
 
 - MS Forms URL prefix
 
@@ -85,9 +85,19 @@ The generated URL will be:
 msFormsUrlPrefix + faceId
 ```
 
+If the prefix is missing or malformed, Tool A should warn the user but may still allow `form_entry.html` export.
+
 ---
 
 # Tool A Features
+
+## Supported Image Formats
+
+Tool A must accept:
+
+- JPEG
+- PNG
+- WebP
 
 ## Face Detection
 
@@ -104,6 +114,10 @@ When existing JSON has been loaded, detection must follow the re-detection workf
 In the Tool A UI flow, users first load the image, then choose either direct detection or face JSON import from an overlay on top of the image.
 
 If face JSON is imported, detection must run automatically after the import completes.
+
+If that automatic detection finds zero new regions, the import flow is still considered successful.
+
+If automatic detection fails, Tool A should surface an error banner. The post-image overlay does not need to reopen for that failure.
 
 ---
 
@@ -130,7 +144,7 @@ Users can:
 - Delete ellipse
 - Select ellipse
 
-Keyboard shortcuts are recommended.
+Keyboard shortcuts are optional in the current baseline release.
 
 ---
 
@@ -166,6 +180,12 @@ When existing JSON is loaded and face detection is run again:
 - Candidate regions are NOT auto-merged
 - Candidate regions are NOT auto-added
 - User manually accepts or ignores candidates
+
+Each candidate may use a temporary `candidateId` for list rendering and review actions.
+
+`candidateId` only needs to be unique within a single detection result set.
+
+It does not need to remain stable across later re-detection runs.
 
 The Tool A review UI may present accepted faces and candidates in one unified list, as long as candidate-specific actions remain explicit.
 
@@ -252,6 +272,8 @@ to generate the final interactive people directory.
 
 Column names must NOT be hardcoded.
 
+Tool B must provide a UI that lets the user map required and optional fields from the CSV header row.
+
 Example mapping:
 
 ```json
@@ -281,7 +303,6 @@ Support:
 
 - UTF-8
 - UTF-8 BOM
-- CP932 / Shift_JIS if possible
 - Excel-generated CSV files
 - Quoted fields
 - Embedded commas
@@ -290,7 +311,7 @@ Support:
 Trim whitespace from:
 
 - `faceId`
-- text fields
+- all mapped text fields
 
 ---
 
@@ -314,6 +335,8 @@ Warnings only:
 - Extra CSV columns exist
 
 Unanswered faces are excluded from the final output.
+
+Before generation, Tool B should show a summary that includes the unanswered-face exclusion count.
 
 ---
 
@@ -364,6 +387,8 @@ Example:
 ```
 
 Tool A must preserve `profile` data when reloading this file.
+
+Tool A does not need to make `profile` fields editable.
 
 ---
 
