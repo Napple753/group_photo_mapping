@@ -34,7 +34,7 @@ Both HTML outputs must be standalone single-file HTML documents.
 - Python 3.11+
 - FastAPI
 - OpenCV
-- MediaPipe Face Detection
+- Backend-side face detection
 - Vanilla JavaScript or Vue.js
 - SVG overlay for face regions
 
@@ -101,7 +101,13 @@ Tool A must accept:
 
 ## Face Detection
 
-Use MediaPipe Face Detection to generate initial face candidates.
+Tool A must provide face detection to generate initial face candidates.
+
+Tool A must run face detection through the backend.
+
+The UI must not fall back to an alternate browser-side detector.
+
+The backend may use a bundled local detector model file.
 
 The detection is only used for initial suggestions.
 
@@ -117,7 +123,11 @@ If face JSON is imported, detection must run automatically after the import comp
 
 If that automatic detection finds zero new regions, the import flow is still considered successful.
 
-If automatic detection fails, Tool A should surface an error banner. The post-image overlay does not need to reopen for that failure.
+If backend detection fails or is unavailable, Tool A should treat the detection action as failed and surface an error banner.
+
+The post-image overlay does not need to reopen for automatic detection failure after JSON import.
+
+Manual face creation and editing must remain usable after detection failure.
 
 ---
 
@@ -517,7 +527,8 @@ Right:
 
 ## Detection
 
-- MediaPipe Face Detection
+- Backend-side detector only
+- Detection failures are surfaced to the user as explicit errors
 
 ## HTML Export
 

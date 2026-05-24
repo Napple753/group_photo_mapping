@@ -54,6 +54,10 @@ The UI must support two distinct workflows:
    - Newly detected faces appear as candidate overlays.
    - Candidate items require explicit accept or ignore actions.
 
+Tool A detection runs through the backend only.
+
+The backend detector implementation may use a bundled local model file, but that implementation detail does not change the UI contract.
+
 ---
 
 ## Primary Screen Structure
@@ -92,7 +96,6 @@ Mobile layout:
 ToolAPage
 |- Header
 |  |- Title Block
-|  |  |- Eyebrow Label
 |  |  |- Page Title
 |  |  |- Introductory Copy
 |  |- Import Actions
@@ -135,11 +138,6 @@ The header must prioritize the image workspace once editing begins.
 
 ### Elements
 
-#### Eyebrow Label
-
-- Content: `Tool A`
-- Purpose: identify the current tool in the broader system
-
 #### Page Title
 
 - Content: `Face Region Editor`
@@ -154,7 +152,7 @@ The header must prioritize the image workspace once editing begins.
 
 Before an image is loaded:
 
-- show eyebrow, title, intro copy, and import controls in the full header layout
+- show title, intro copy, and import controls in the full header layout
 
 After an image is loaded:
 
@@ -277,6 +275,7 @@ Behavior:
 - a successful detection action includes a zero-result detection response
 - may be shown again if the image is replaced
 - detection failure after JSON import should surface through the Error Banner without reopening the overlay
+- detection failure must be surfaced as an explicit backend error
 
 #### SVG Overlay Layer
 
@@ -324,6 +323,8 @@ The toolbar is visually attached to the stage and controls stage-centric actions
 #### Run Detection Button
 
 - Purpose: invoke face detection
+
+The button triggers a backend detection request.
 
 Behavior depends on session state:
 
@@ -631,6 +632,7 @@ The UI behavior depends on the following top-level states.
 - idle
 - running
 - candidates available
+- failed
 
 ### Message State
 
@@ -701,6 +703,7 @@ Result:
 
 - all detected faces are immediately turned into accepted final faces
 - no candidate review step is shown for that detection pass
+- if the backend request fails, the detection attempt is treated as failed and faces are not modified
 
 ### Re-Detection
 
@@ -714,6 +717,7 @@ Result:
 - existing faces stay unchanged
 - new detections appear as candidates
 - user must accept or ignore each candidate item from the unified face list
+- if the backend request fails, existing faces remain unchanged and an error banner is shown
 
 ### Manual Face Creation
 
@@ -766,6 +770,7 @@ Use the Error Banner for:
 - import failures
 - export failures
 - backend connectivity failures
+- backend detection failures
 
 ### Inline Validation
 
